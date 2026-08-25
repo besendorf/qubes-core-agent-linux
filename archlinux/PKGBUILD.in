@@ -104,6 +104,15 @@ package_qubes-vm-core() {
     # shellcheck disable=SC2154
     make -C boot DESTDIR="$pkgdir" SYSTEM_DROPIN_DIR=/usr/lib/systemd/system install
     make install-corevm DESTDIR="$pkgdir" SBINDIR=/usr/bin LIBDIR=/usr/lib SYSLIBDIR=/usr/lib SYSTEM_DROPIN_DIR=/usr/lib/systemd/system USER_DROPIN_DIR=/usr/lib/systemd/user DIST=archlinux
+
+    # mkinitcpio's systemd hook copies sysinit.target drop-ins into the
+    # initramfs.  systemd-random-seed.service is not included there, so a hard
+    # dependency would make the initramfs fail before the root filesystem is
+    # available.  Keep the dependency for the normal system boot, but make it
+    # optional in Arch's initramfs.
+    sed -i 's/^Requires=systemd-random-seed\.service$/Wants=systemd-random-seed.service/' \
+        "$pkgdir/usr/lib/systemd/system/sysinit.target.d/30_qubes.conf"
+
     make -C app-menu install DESTDIR="$pkgdir" install LIBDIR=/usr/lib SYSLIBDIR=/usr/lib
     make -C misc install DESTDIR="$pkgdir" install LIBDIR=/usr/lib SYSLIBDIR=/usr/lib
     make -C qubes-rpc DESTDIR="$pkgdir" install
